@@ -7,6 +7,7 @@
 
 const std::string JSON_DATA_TYPES = {"String","Number","Boolean","Null","Object","Array"};
 
+
 template<class T>
 class Object
 {
