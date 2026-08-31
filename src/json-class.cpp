@@ -1,31 +1,74 @@
 #include "json-class.hpp"
 
-JsonData::JsonData()
-{
 
+JsonData::JsonData(const JsonData& other)
+    : dataType(other.dataType)
+{
+    std::visit(
+        [this](const auto& value)
+        {
+            using Type = std::decay_t<decltype(value)>;
+
+            if constexpr ( // Check if data type is simple
+                std::is_same_v<Type, std::string> ||
+                std::is_same_v<Type, double> ||
+                std::is_same_v<Type, bool> ||
+                std::is_same_v<Type, std::nullptr_t>
+            )
+            {
+                data = value;
+            }
+            // Now complex data type
+            else if constexpr (std::is_same_v<Type, std::unique_ptr<JsonObject>>)
+            {
+                // TODO: JsonObject deepcopy
+            }
+            else if constexpr (std::is_same_v<Type, std::unique_ptr<JsonArray>>)
+            {
+                // TODO: JsonArray deepcopy
+            }
+        },
+        other.data
+    );
 }
 
-template <class T>
-JsonData::JsonData(T data, JsonType type)
-{
 
+void JsonData::copyFrom(const JsonData& other)
+{
+    dataType = other.dataType;
+    std::visit(
+        [this](const auto& value)
+        {
+            using Type = std::decay_t<decltype(value)>;
+
+            if constexpr ( // Check if data type is simple
+                std::is_same_v<Type, std::string> ||
+                std::is_same_v<Type, double> ||
+                std::is_same_v<Type, bool> ||
+                std::is_same_v<Type, std::nullptr_t>
+            )
+            {
+                data = value;
+            }
+            // Now complex data type
+            else if constexpr (std::is_same_v<Type, std::unique_ptr<JsonObject>>)
+            {
+                // TODO: JsonObject deepcopy
+            }
+            else if constexpr (std::is_same_v<Type, std::unique_ptr<JsonArray>>)
+            {
+                // TODO: JsonArray deepcopy
+            }
+        },
+        other.data
+    );
 }
 
-JsonData::~JsonData()
+JsonData& JsonData::operator=(const JsonData& other)
 {
-
+    copyFrom(other);
+    return *this;
 }
 
-const JsonPrimitive& JsonData::getData() const
-{
 
-}
-const JsonType& JsonData::getType() const
-{
 
-}
-template <class T>
-void JsonData::setData(T newData)
-{
-
-}
