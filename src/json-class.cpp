@@ -144,12 +144,281 @@ const JsonPair* JsonObject::find(const std::string& key) const
     }
     return nullptr;
 }
-/*
-JsonData parse(const std::string& json)
-{ 
+
+
+
+void JsonLexer::skipWhitespace()
+{
+    while (!isAtEnd() && (
+        *current == ' ' ||
+        *current == '\n' ||
+        *current == '\r' ||
+        *current == '\t'))
+    {
+        advance();
+    }
 }
 
-std::string serialize(const JsonData& data);
-*/
+JsonToken JsonLexer::scanString()
+{
+    std::string text = "";
+    advance();
+    while (!isAtEnd() && *current != '"')
+    {
+        if(*current == '\\')    
+        {
+            advance();
+            if(isAtEnd()) 
+                break;
+
+            if(*current == 'n')
+            {
+                text += '\n';
+            }
+            else if(*current == 'r')
+            {
+                text += '\r';
+            }
+            else if(*current == 't')
+            {
+                text += '\t';
+            }
+            else 
+            {
+                text += *current;
+            }
+        }
+        else
+        {
+            text += *current;
+            
+        }
+        advance();
+    }
+
+    if (!isAtEnd())
+        advance();
+
+    JsonToken result;
+    result.type = JsonTokenType::String;
+    result.value = text;
+    return result;
+}
+
+JsonToken JsonLexer::scanNumber()
+{
+    std::string number = "";
+
+    if (*current == '-') // Positive or negative
+    {
+        number += *current;
+        advance();
+
+        if (isAtEnd() || !std::isdigit(*current))
+        {
+            throw std::runtime_error("Invalid JSON number");
+        }
+    }
+
+    if (*current == '0') // Integer
+    {
+        number += *current;
+        advance();
+
+        if (!isAtEnd() && std::isdigit(*current)) // 01, 02, ... is not allowed
+        {
+            throw std::runtime_error("Invalid JSON number");
+        }
+    }
+    else
+    {
+        if (isAtEnd() || !std::isdigit(*current))
+        {
+            throw std::runtime_error("Invalid JSON number");
+        }
+
+        while (!isAtEnd() && std::isdigit(*current))
+        {
+            number += *current;
+            advance();
+        }
+    }
+
+    if (!isAtEnd() && *current == '.') // Decimal
+    {
+        number += *current;
+        advance();
+
+        if (isAtEnd() || !std::isdigit(*current))
+        {
+            throw std::runtime_error("Invalid JSON number");
+        }
+
+        while (!isAtEnd() && std::isdigit(*current))
+        {
+            number += *current;
+            advance();
+        }
+    }
+
+    if (!isAtEnd() && (*current == 'e' || *current == 'E')) // Exponent
+    {
+        number += *current;
+        advance();
+
+        if (!isAtEnd() && (*current == '+' || *current == '-'))
+        {
+            number += *current;
+            advance();
+        }
+
+        if (isAtEnd() || !std::isdigit(*current))
+        {
+            throw std::runtime_error("Invalid JSON number");
+        }
+
+        while (!isAtEnd() && std::isdigit(*current))
+        {
+            number += *current;
+            advance();
+        }
+    }
+
+    JsonToken result;
+    result.type = JsonTokenType::Number;
+    result.value = number;
+
+    return result;
+}
+
+JsonToken JsonLexer::scanKeyword()
+{
+    std::string keyWord = "";
+    JsonTokenType type;
+    bool correct = false;
+
+    if (!isAtEnd())
+    {
+        switch (*current)
+        {
+            case 't':
+                advance();
+                if (!isAtEnd() && *current == 'r')
+                {
+                    advance();
+                    if (!isAtEnd() && *current == 'u')
+                    {
+                        advance();
+                        if (!isAtEnd() && *current == 'e')
+                        {
+                            correct = true;
+                            keyWord = "true";
+                            type = JsonTokenType::True;
+                            advance();
+                        }
+                    }
+                }
+                break;
+
+            case 'f':
+                advance();
+                if (!isAtEnd() && *current == 'a')
+                {
+                    advance();
+                    if (!isAtEnd() && *current == 'l')
+                    {
+                        advance();
+                        if (!isAtEnd() && *current == 's')
+                        {
+                            advance();
+                            if (!isAtEnd() && *current == 'e')
+                            {
+                                correct = true;
+                                keyWord = "false";
+                                type = JsonTokenType::False;
+                                advance();
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case 'n':
+                advance();
+                if (!isAtEnd() && *current == 'u')
+                {
+                    advance();
+                    if (!isAtEnd() && *current == 'l')
+                    {
+                        advance();
+                        if (!isAtEnd() && *current == 'l')
+                        {
+                            correct = true;
+                            keyWord = "null";
+                            type = JsonTokenType::Null;
+                            advance();
+                        }
+                    }
+                }
+                break;
+
+            default:
+                throw std::runtime_error("Invalid keyword");
+        }
+    }
+
+    if (!correct)
+        throw std::runtime_error("Invalid keyword");
+
+    JsonToken result;
+    result.type = type;
+    result.value = keyWord;
+
+    return result;
+}
+
+JsonToken JsonLexer::scanSymbol()
+{
+    JsonToken result;
+
+    switch (*current)
+    {
+        case '{':
+            result.type = JsonTokenType::LBrace;
+            break;
+
+        case '}':
+            result.type = JsonTokenType::RBrace;
+            break;
+
+        case '[':
+            result.type = JsonTokenType::LBracket;
+            break;
+
+        case ']':
+            result.type = JsonTokenType::RBracket;
+            break;
+
+        case ':':
+            result.type = JsonTokenType::Colon;
+            break;
+
+        case ',':
+            result.type = JsonTokenType::Comma;
+            break;
+
+        default:
+            throw std::runtime_error("Unknown character");
+    }
+
+    result.value = *current;
+    advance();
+
+    return result;
+}
 
 
+std::vector<JsonToken> JsonLexer::tokenize()
+{
+    
+}

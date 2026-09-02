@@ -255,20 +255,28 @@ struct JsonToken
 class JsonLexer
 {
     private:
-        std::string input;
-        std::size_t current = 0;
+        std::string::const_iterator current;
+        std::string::const_iterator end;
 
         void skipWhitespace();
 
         JsonToken scanString();
         JsonToken scanNumber();
         JsonToken scanKeyword();
+        JsonToken scanSymbol();
 
-        char peek() const;
-        char advance();
-        bool isAtEnd() const;
+        char peek() const {return *current;}
+        char advance() {return *current++;}
+        bool isAtEnd() const {return current == end;}
     public:
-        JsonLexer(const std::string& input);
+        JsonLexer(const std::string& input): current(input.begin()),end(input.end())
+        {
+
+        }
+        JsonLexer(const JsonLexer& input): current(input.current),end(input.end)
+        {
+
+        }
 
         std::vector<JsonToken> tokenize();
 };
